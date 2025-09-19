@@ -6,7 +6,18 @@
 int main()
 {
 	while (1) {
-		printf("> ");
+		// print the username, machine name and current directory like in a normal shell
+		// e.g. user@machine:/current/directory
+		char *username = getenv("USER");
+		char* machine = getenv("HOSTNAME") ? getenv("HOSTNAME") : getenv("MACHINE");
+		char* currentDirectory = getenv("PWD");
+		if (currentDirectory == NULL)
+			currentDirectory = "unknown";
+		if (machine == NULL)
+			machine = "unknown";
+		if (username == NULL)
+			username = "unknown";
+		printf("%s@%s:%s> ", username, machine, currentDirectory);
 
 		/* input contains the whole command
 		 * tokens contains substrings from input split by spaces
@@ -74,8 +85,28 @@ tokenlist *get_tokens(char *input) {
 	strcpy(buf, input);
 	tokenlist *tokens = new_tokenlist();
 	char *tok = strtok(buf, " ");
+
+	// iterate through each token
 	while (tok != NULL)
 	{
+		// if the token contains a newline character, replace it with a null terminator
+		for (int i = 0; i < strlen(tok); i++)
+		{
+			if (tok[i] == '\n')
+			{
+				tok[i] = 0;
+				break;
+			}
+		}
+		// if the token starts with a $, replace it with the value of the environment variable
+		if (tok[0] == '$')
+		{
+			char *env = getenv(&tok[1]);
+			if (env != NULL)
+				tok = env;
+			else
+				tok = "";
+		}
 		add_token(tokens, tok);
 		tok = strtok(NULL, " ");
 	}
