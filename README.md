@@ -3,18 +3,18 @@
 [Description]
 
 ## Group Members
-- **John Doe**: jd19@fsu.edu
+- **Hubert Pilichowski**: hp22q@fsu.edu
 - **Jane Smith**: js19@fsu.edu
 - **Alex Brown**: ab19@fsu.edu
 ## Division of Labor
 
 ### Part 1: Prompt
 - **Responsibilities**: [Description]
-- **Assigned to**: John Doe
+- **Assigned to**: Hubert Pilichowski
 
 ### Part 2: Environment Variables
 - **Responsibilities**: [Description]
-- **Assigned to**: Jane Smith
+- **Assigned to**: Hubert Pilichowski
 
 ### Part 3: Tilde Expansion
 - **Responsibilities**: [Description]
@@ -87,11 +87,11 @@ This will run the program ...
 ## Development Log
 Each member records their contributions here.
 
-### [Member 1]
+### Hubert Pilichowski
 
 | Date       | Work Completed / Notes |
 |------------|------------------------|
-| YYYY-MM-DD | [Description of task]  |
+| 2025-09-19 | Worked out the logic for parts 1 and 2  |
 | YYYY-MM-DD | [Description of task]  |
 | YYYY-MM-DD | [Description of task]  |
 
@@ -118,7 +118,7 @@ Document in-person meetings, their purpose, and what was discussed.
 
 | Date       | Attendees            | Topics Discussed | Outcomes / Decisions |
 |------------|----------------------|------------------|-----------------------|
-| YYYY-MM-DD | [Names]              | [Agenda items]   | [Actions/Next steps]  |
+| 2025-09-19 | Hubert Pilichowski   | Start Project    | Finished parts 1 and 2/work further into the project  |
 | YYYY-MM-DD | [Names]              | [Agenda items]   | [Actions/Next steps]  |
 
 

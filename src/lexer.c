@@ -1,4 +1,6 @@
 #include "lexer.h"
+#include "prompt.h"
+#include "environmentVariables.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,16 +10,7 @@ int main()
 	while (1) {
 		// print the username, machine name and current directory like in a normal shell
 		// e.g. user@machine:/current/directory
-		char *username = getenv("USER");
-		char* machine = getenv("HOSTNAME") ? getenv("HOSTNAME") : getenv("MACHINE");
-		char* currentDirectory = getenv("PWD");
-		if (currentDirectory == NULL)
-			currentDirectory = "unknown";
-		if (machine == NULL)
-			machine = "unknown";
-		if (username == NULL)
-			username = "unknown";
-		printf("%s@%s:%s> ", username, machine, currentDirectory);
+		prompt();
 
 		/* input contains the whole command
 		 * tokens contains substrings from input split by spaces
@@ -86,30 +79,7 @@ tokenlist *get_tokens(char *input) {
 	tokenlist *tokens = new_tokenlist();
 	char *tok = strtok(buf, " ");
 
-	// iterate through each token
-	while (tok != NULL)
-	{
-		// if the token contains a newline character, replace it with a null terminator
-		for (int i = 0; i < strlen(tok); i++)
-		{
-			if (tok[i] == '\n')
-			{
-				tok[i] = 0;
-				break;
-			}
-		}
-		// if the token starts with a $, replace it with the value of the environment variable
-		if (tok[0] == '$')
-		{
-			char *env = getenv(&tok[1]);
-			if (env != NULL)
-				tok = env;
-			else
-				tok = "";
-		}
-		add_token(tokens, tok);
-		tok = strtok(NULL, " ");
-	}
+	change_env_var(tok, tokens); // call created function to change env variables
 	free(buf);
 	return tokens;
 }
