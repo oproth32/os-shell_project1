@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "prompt.h"
 #include "environmentVariables.h"
+#include "pathSearch.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +24,7 @@ int main()
 		for (int i = 0; i < tokens->size; i++) {
 			printf("token %d: (%s)\n", i, tokens->items[i]);
 		}
+		pathSearch(tokens); // call path search function
 
 		free(input);
 		free_tokens(tokens);

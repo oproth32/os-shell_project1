@@ -1,6 +1,5 @@
 #include "lexer.h"
 #include "environmentVariables.h"
-#include "pathSearch.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +54,6 @@ tokenlist *get_tokens(char *input) {
 	char *tok = strtok(buf, " ");
 
 	change_env_var(tok, tokens); // call created function to change env variables
-	pathSearch(tokens); // call path search function
 	free(buf);
 	return tokens;
 }

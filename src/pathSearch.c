@@ -5,6 +5,7 @@
 #include "lexer.h"
 #include "pathSearch.h"
 
+void executeProcess(tokenlist *tokens, char *fullpath);
 
 void pathSearch(tokenlist *tokens)
 {
@@ -42,15 +43,13 @@ void pathSearch(tokenlist *tokens)
         strcpy(fullpath + strlen(paths[i]) + 1, command);
         printf("Checking path: %s\n", fullpath);
         if (access(fullpath, X_OK) == 0) {
-            char **argv = malloc((tokens->size - 1) * sizeof *argv);
-            for (int j = 1; j < tokens->size; j++)
-                argv[j - 1] = tokens->items[j];
-            printf("Command found at: %s\n", fullpath);
             found = 1;
-            execv(fullpath, argv); // Execute the command with arguments
+            executeProcess(tokens, fullpath);
+            free(fullpath); // Free the allocated memory
             break;
         }
-        free(fullpath); // Free the allocated memory
+        else
+            free(fullpath); // Free the allocated memory
     }
     if (!found) {
         printf("command not found: %s\n", command);
@@ -79,7 +78,25 @@ char** getEachPath(char *path)
     return paths;
 }
 
-void executeProcess()
+void executeProcess(tokenlist *tokens, char *fullpath)
 {
-    
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("Fork failed");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid == 0) {
+        // Prepare arguments for execv
+        char **argv = malloc((tokens->size - 1) * sizeof *argv);
+        for (int j = 1; j < tokens->size; j++)
+            argv[j - 1] = tokens->items[j];
+        printf("Command found at: %s\n", fullpath);
+        execv(fullpath, argv); // Execute the command with arguments
+    }
+    else if (pid > 0) {
+        // Parent process
+        int status;
+        waitpid(pid, &status, 0); // Wait for child process to finish
+        return;
+    }
 }
