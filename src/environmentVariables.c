@@ -25,6 +25,34 @@ void change_env_var(char *tok, tokenlist *tokens) {
 			else
 				tok = "";
 		}
+		else if (tok[0] == '~' && (tok[1] == '\\' || tok[1] == '\0'))
+		{
+			char *home = getenv("HOME");
+			if (home != NULL)
+			{
+
+				size_t homelen = strlen(home);
+				size_t tolen = strlen(&tok[1]);
+				char *newtok = (char *)malloc(homelen + tolen + 1);
+				if (newtok)
+				{
+					memcpy(newtok, home, homelen);
+					memcpy(&newtok[homelen], &tok[1], tolen + 1);
+					newtok[homelen + tolen] = 0;
+					add_token(tokens, newtok);
+					free(newtok);
+				}
+				else
+					add_token(tokens, tok); // if malloc fails, just add the original token
+			}
+			else
+			{
+				add_token(tokens, tok);
+			}
+			tok = strtok(NULL, " ");
+			continue;
+
+		}
 		add_token(tokens, tok);
 		tok = strtok(NULL, " ");
 	}
