@@ -55,7 +55,7 @@ tokenlist *get_tokens(char *input) {
 	char *tok = strtok(buf, " ");
 
 	change_env_var(tok, tokens); // call created function to change env variables
-	pathSearch(tok); // call path search function
+	pathSearch(tokens); // call path search function
 	free(buf);
 	return tokens;
 }

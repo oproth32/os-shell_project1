@@ -1,7 +1,9 @@
 #ifndef PATHSEARCH_H
 #define PATHSEARCH_H
 
-void pathSearch(char *command);
+#include "lexer.h"
+
+void pathSearch(tokenlist *tokens);
 char ** getEachPath(char *path);
 
 #endif

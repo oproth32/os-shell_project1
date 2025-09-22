@@ -2,16 +2,31 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "lexer.h"
 #include "pathSearch.h"
 
 
-void pathSearch(char *command)
+void pathSearch(tokenlist *tokens)
 {
+    char *command = tokens->items[0];
     const char *pathEnv = getenv("PATH");
     char *pathBuffer = strdup(pathEnv); // Duplicate PATH to avoid modifying the original
     // Implementation of path search
     printf("Searching for command: %s\n", command);
     printf("Searching through path: %s\n", pathEnv);
+
+    // Check if command is an absolute path
+    if (command[0] == '/')
+    {
+        if (access(command, X_OK) == 0) {
+            char **argv = malloc((tokens->size - 1) * sizeof *argv);
+            for (int j = 1; j < tokens->size; j++)
+                argv[j - 1] = tokens->items[j];
+            printf("Command found at: %s\n", command);
+            execv(command, argv); // Execute the command with arguments
+            return;
+        }
+    }
 
     char **paths = getEachPath(pathBuffer);
     int found = 0; // Flag to indicate if command is found
@@ -27,10 +42,13 @@ void pathSearch(char *command)
         strcpy(fullpath + strlen(paths[i]) + 1, command);
         printf("Checking path: %s\n", fullpath);
         if (access(fullpath, X_OK) == 0) {
+            char **argv = malloc((tokens->size - 1) * sizeof *argv);
+            for (int j = 1; j < tokens->size; j++)
+                argv[j - 1] = tokens->items[j];
             printf("Command found at: %s\n", fullpath);
             found = 1;
+            execv(fullpath, argv); // Execute the command with arguments
             break;
-            //  TODO: execv(fullpath); // Execute the command if found
         }
         free(fullpath); // Free the allocated memory
     }
@@ -59,4 +77,9 @@ char** getEachPath(char *path)
     paths = realloc(paths, sizeof(char *) * (count + 1));
     paths[count] = NULL;
     return paths;
+}
+
+void executeProcess()
+{
+    
 }
