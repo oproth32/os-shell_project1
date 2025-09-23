@@ -3,7 +3,7 @@
 
 #include "lexer.h"
 
+/* Entry point: resolves command (PATH or direct) and executes (with redirection, via redirection module). */
 void pathSearch(tokenlist *tokens);
-char ** getEachPath(char *path);
 
-#endif
+#endif /* PATHSEARCH_H */

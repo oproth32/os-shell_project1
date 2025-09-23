@@ -1,102 +1,83 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include "lexer.h"
 #include "pathSearch.h"
+#include "redirection.h"
 
-void executeProcess(tokenlist *tokens, char *fullpath);
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 
-void pathSearch(tokenlist *tokens)
-{
-    char *command = tokens->items[0];
-    const char *pathEnv = getenv("PATH");
-    char *pathBuffer = strdup(pathEnv); // Duplicate PATH to avoid modifying the original
-    // Implementation of path search
-    printf("Searching for command: %s\n", command);
-    printf("Searching through path: %s\n", pathEnv);
+#include <unistd.h>     /* access */
+#include <sys/stat.h>   /* stat, S_ISREG */
 
-    // Check if command is an absolute path
-    if (command[0] == '/')
-    {
+/* -------- helpers to resolve executable path -------- */
+#define PATH_MAX 4096
+
+static int has_slash(const char *s) {
+    return s && strchr(s, '/') != NULL;
+}
+
+/* Search $PATH for cmd; write full path to resolved on success, return 1/0. */
+static int resolve_via_path(const char *cmd, char resolved[PATH_MAX]) {
+    const char *path = getenv("PATH");
+    if (!cmd || !*cmd) return 0;
+    if (!path) path = "";
+
+    size_t len = strlen(path);
+    char *copy = malloc(len+1);
+    if (copy == NULL)
+	perror("malloc failed");
+
+    strcpy(copy, path);
+    if (!copy) return 0;
+
+    int ok = 0;
+    for (char *seg = strtok(copy, ":"); seg; seg = strtok(NULL, ":")) {
+        const char *dir = (*seg == '\0') ? "." : seg; /* empty segment == current dir */
+        if (snprintf(resolved, PATH_MAX, "%s/%s", dir, cmd) >= (int)PATH_MAX) {
+            continue; /* path too long, skip */
+        }
+        if (access(resolved, X_OK) == 0) {
+            struct stat st;
+            if (stat(resolved, &st) == 0 && S_ISREG(st.st_mode)) {
+                ok = 1;
+                break;
+            }
+        }
+    }
+    free(copy);
+    return ok;
+}
+
+/* -------- main entry -------- */
+
+void pathSearch(tokenlist *tokens) {
+    if (!tokens || tokens->size == 0) return;
+
+    /* 1) Parse out < and >, build argv[] */
+    CmdParts parts;
+    if (!parse_redirection_from_tokens(tokens, &parts)) {
+        return; /* syntax error already printed */
+    }
+
+    const char *command = parts.argv[0];
+
+    /* 2) If command contains '/', treat as direct path (no PATH search) */
+    if (has_slash(command)) {
         if (access(command, X_OK) == 0) {
-            char **argv = malloc((tokens->size - 1) * sizeof *argv);
-            for (int j = 1; j < tokens->size; j++)
-                argv[j - 1] = tokens->items[j];
-            printf("Command found at: %s\n", command);
-            execv(command, argv); // Execute the command with arguments
-            return;
+            exec_external_with_redir(command, &parts);
+        } else {
+            fprintf(stderr, "%s: command not found or not executable\n", command);
+            free(parts.argv);
         }
-    }
-
-    char **paths = getEachPath(pathBuffer);
-    int found = 0; // Flag to indicate if command is found
-    for (int i = 0; paths[i] != NULL; i++)
-    {
-        // get the length of each path at runtime
-        size_t length = strlen(paths[i]) + strlen(command) + 2;
-        char *fullpath = malloc(length); // allocate memory for the full path
-        // copy the command and path into fullpath
-        strcpy(fullpath, paths[i]);
-        strcpy(fullpath + strlen(paths[i]), "/");
-        // allocate one byte for the null terminator
-        strcpy(fullpath + strlen(paths[i]) + 1, command);
-        printf("Checking path: %s\n", fullpath);
-        if (access(fullpath, X_OK) == 0) {
-            found = 1;
-            executeProcess(tokens, fullpath);
-            free(fullpath); // Free the allocated memory
-            break;
-        }
-        else
-            free(fullpath); // Free the allocated memory
-    }
-    if (!found) {
-        printf("command not found: %s\n", command);
-    }
-}
-
-char** getEachPath(char *path)
-{
-    // Implementation of getting each path
-    char *token = strtok(path, ":");
-    char **paths = NULL;
-    int count = 0;
-    while (token != NULL)
-    {
-        // get each path segment
-        printf("Path segment: %s\n", token);
-        // dynamically allocate memory for each path segment including null terminator
-        paths = realloc(paths, sizeof(char *) * (count + 1));
-        paths[count] = strdup(token);
-        count++;
-        token = strtok(NULL, ":");
-    }
-    // Null terminate the array of paths
-    paths = realloc(paths, sizeof(char *) * (count + 1));
-    paths[count] = NULL;
-    return paths;
-}
-
-void executeProcess(tokenlist *tokens, char *fullpath)
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        perror("Fork failed");
-        exit(EXIT_FAILURE);
-    }
-    else if (pid == 0) {
-        // Prepare arguments for execv
-        char **argv = malloc((tokens->size - 1) * sizeof *argv);
-        for (int j = 1; j < tokens->size; j++)
-            argv[j - 1] = tokens->items[j];
-        printf("Command found at: %s\n", fullpath);
-        execv(fullpath, argv); // Execute the command with arguments
-    }
-    else if (pid > 0) {
-        // Parent process
-        int status;
-        waitpid(pid, &status, 0); // Wait for child process to finish
         return;
+    }
+
+    /* 3) PATH search */
+    char resolved[PATH_MAX];
+    if (resolve_via_path(command, resolved)) {
+        exec_external_with_redir(resolved, &parts);
+    } else {
+        fprintf(stderr, "%s: command not found\n", command);
+        free(parts.argv);
     }
 }
