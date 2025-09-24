@@ -25,10 +25,10 @@ static char **alloc_argv(size_t cap) {
 }
 
 int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) {
-    parts->in_path  = NULL;
+    parts->in_path = NULL;
     parts->out_path = NULL;
-    parts->argv     = NULL;
-    parts->argc     = 0;
+    parts->argv = NULL;
+    parts->argc = 0;
 
     if (!tokens || tokens->size == 0) return 0;
 
@@ -51,8 +51,10 @@ int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) {
                 return 0;
             }
             char *fname = tokens->items[++i]; /* consume filename */
-            if (is_in)  parts->in_path  = fname;
-            else        parts->out_path = fname;
+            if (is_in)  
+                parts->in_path = fname;
+            else        
+                parts->out_path = fname;
             continue;
         }
 
@@ -60,7 +62,7 @@ int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) {
         parts->argv[out_i++] = t;
     }
 
-    parts->argc        = out_i;
+    parts->argc = out_i;
     parts->argv[out_i] = NULL;
 
     if (parts->argc == 0) {
@@ -83,26 +85,36 @@ static int setup_input_redir(const char *in_path) {
         errno = EINVAL;
         return -1;
     }
-    if (dup2(fd, STDIN_FILENO) == -1) { perror("dup2 stdin"); close(fd); return -1; }
+    if (dup2(fd, STDIN_FILENO) == -1) { 
+        perror("dup2 stdin"); 
+        close(fd); 
+        return -1; 
+    }
     close(fd);
     return 0;
 }
 
 static int setup_output_redir(const char *out_path) {
     int fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC, 0600); /* -rw------- */
-    if (fd < 0) { perror(out_path); return -1; }
+    if (fd < 0) { 
+        perror(out_path);
+         return -1; 
+    }
     
-
-    if (dup2(fd, STDOUT_FILENO) == -1) { perror("dup2 stdout"); close(fd); return -1; }
+    if (dup2(fd, STDOUT_FILENO) == -1) {
+        perror("dup2 stdout");
+        close(fd);
+        return -1;
+    }
     close(fd);
     return 0;
 }
 
 /* ---------- fork/exec wrapper ---------- */
-
 void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
     if (!path_to_exec || !parts || !parts->argv || !parts->argv[0]) {
-        if (parts && parts->argv) free(parts->argv);
+        if (parts && parts->argv) 
+            free(parts->argv);
         return;
     }
 
@@ -114,8 +126,10 @@ void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
     }
     if (pid == 0) {
         /* CHILD: set up redirections first */
-        if (parts->in_path  && setup_input_redir(parts->in_path)  == -1) _exit(1);
-        if (parts->out_path && setup_output_redir(parts->out_path) == -1) _exit(1);
+        if (parts->in_path  && setup_input_redir(parts->in_path) == -1) 
+            _exit(1);
+        if (parts->out_path && setup_output_redir(parts->out_path) == -1) 
+            _exit(1);
 
         execv(path_to_exec, parts->argv);
         perror(parts->argv[0]);
