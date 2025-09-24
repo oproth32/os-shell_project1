@@ -18,5 +18,6 @@ int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts);
 /* Forks; in child applies redirection then execv(path_to_exec, parts->argv).
    Frees parts->argv (the pointer array) in parent. */
 void exec_external_with_redir(const char *path_to_exec, CmdParts *parts);
+pid_t spawn_external_with_redir(const char *path_to_exec, CmdParts *parts);
 
 #endif /* REDIRECTION_H */

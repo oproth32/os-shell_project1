@@ -141,3 +141,30 @@ void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
         free(parts->argv); /* free only the argv pointer array we allocated */
     }
 }
+
+// Spawn with redirection but DO NOT wait; returns child's pid (or -1 on error).
+pid_t spawn_external_with_redir(const char *path_to_exec, CmdParts *parts) {
+    if (!path_to_exec || !parts || !parts->argv || !parts->argv[0]) {
+        if (parts && parts->argv) free(parts->argv);
+        return -1;
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        free(parts->argv);
+        return -1;
+    }
+    if (pid == 0) {
+        /* CHILD: set up redirections first */
+        if (parts->in_path  && setup_input_redir(parts->in_path)  == -1) _exit(1);
+        if (parts->out_path && setup_output_redir(parts->out_path) == -1) _exit(1);
+
+        execv(path_to_exec, parts->argv);
+        perror(parts->argv[0]);
+        _exit(127);
+    }
+
+    /* PARENT: do NOT wait here. Caller is responsible for freeing parts->argv. */
+    return pid;
+}
