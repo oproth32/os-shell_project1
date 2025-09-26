@@ -6,7 +6,7 @@
 
 /* Parsed command after removing redirection operators */
 typedef struct {
-    char   **argv;     /* NULL-terminated argv (no <, >, filenames) */
+    char   **argv;     /* NULL-terminated list of argv (no <, >, filenames) */
     size_t   argc;     /* number of args, not counting the NULL */
     char    *in_path;  /* NULL if no "<" */
     char    *out_path; /* NULL if no ">" */

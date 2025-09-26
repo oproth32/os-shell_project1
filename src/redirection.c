@@ -12,20 +12,23 @@
 #include <errno.h>
 
 // parsing
-static int is_redir_op(const char *s) {
+static int is_redir_op(const char *s)
+{
     return s && (strcmp(s, "<") == 0 || strcmp(s, ">") == 0);
 }
 
 /* Build argv by copying pointers to existing token strings (no strdup).
    Caller must free the argv pointer array (NOT the strings) later. */
-static char **alloc_argv(size_t cap) {
+static char **alloc_argv(size_t cap) 
+{
     char **argv = (char **)calloc(cap, sizeof(char *));
     return argv;
 }
 
 // Parse redirection operators from tokens into parts struct.
 // Returns 1 on success, 0 on error (syntax error or OOM).
-int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) {
+int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) 
+{
     parts->in_path = NULL;
     parts->out_path = NULL;
     parts->argv = NULL;
@@ -44,11 +47,13 @@ int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) {
     for (int i = 0; i < tokens->size; ++i) {
         char *t = tokens->items[i];
 
-        if (strcmp(t, "<") == 0 || strcmp(t, ">") == 0) {
+        if (strcmp(t, "<") == 0 || strcmp(t, ">") == 0) 
+        {
             int is_in = (t[0] == '<');
 
             // Need a filename after the operator
-            if (i + 1 >= tokens->size || is_redir_op(tokens->items[i + 1])) {
+            if (i + 1 >= tokens->size || is_redir_op(tokens->items[i + 1])) 
+            {
                 fprintf(stderr, "syntax error: %s expects a filename\n", t);
                 free(parts->argv);
                 parts->argv = NULL;
@@ -81,17 +86,23 @@ int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) {
 // redirection helpers (child side)
 static int setup_input_redir(const char *in_path) {
     int fd = open(in_path, O_RDONLY);
-    if (fd < 0) { perror(in_path); return -1; }
+    if (fd < 0) 
+    {
+        perror(in_path); 
+        return -1; 
+    }
     struct stat st;
     // Ensure it's a regular file
-    if (fstat(fd, &st) == -1 || !S_ISREG(st.st_mode)) {
+    if (fstat(fd, &st) == -1 || !S_ISREG(st.st_mode)) 
+    {
         fprintf(stderr, "%s: not a regular file\n", in_path);
         close(fd);
         errno = EINVAL;
         return -1;
     }
     // Dup to stdin
-    if (dup2(fd, STDIN_FILENO) == -1) { 
+    if (dup2(fd, STDIN_FILENO) == -1) 
+    { 
         perror("dup2 stdin"); 
         close(fd); 
         return -1; 
@@ -103,13 +114,15 @@ static int setup_input_redir(const char *in_path) {
 // Set up output redirection (child side).
 static int setup_output_redir(const char *out_path) {
     int fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC, 0600); /* -rw------- */
-    if (fd < 0) { 
+    if (fd < 0) 
+    { 
         perror(out_path);
          return -1; 
     }
 
     // Dup to stdout
-    if (dup2(fd, STDOUT_FILENO) == -1) {
+    if (dup2(fd, STDOUT_FILENO) == -1) 
+    {
         perror("dup2 stdout");
         close(fd);
         return -1;
@@ -119,8 +132,10 @@ static int setup_output_redir(const char *out_path) {
 }
 
 // fork/exec wrapper
-void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
-    if (!path_to_exec || !parts || !parts->argv || !parts->argv[0]) {
+void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) 
+{
+    if (!path_to_exec || !parts || !parts->argv || !parts->argv[0]) 
+    {
         if (parts && parts->argv) 
             free(parts->argv);
         return;
@@ -128,12 +143,14 @@ void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
 
     // Fork a child process
     pid_t pid = fork();
-    if (pid < 0) {
+    if (pid < 0) 
+    {
         perror("fork");
         free(parts->argv);
         return;
     }
-    if (pid == 0) {
+    if (pid == 0) 
+    {
         // CHILD: set up redirections first
         if (parts->in_path  && setup_input_redir(parts->in_path) == -1) 
             _exit(1);
@@ -143,7 +160,8 @@ void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
         execv(path_to_exec, parts->argv);
         perror(parts->argv[0]);
         _exit(127);
-    } else {
+    } else 
+    {
         // PARENT: wait (background support comes later)
         int status;
         (void)waitpid(pid, &status, 0);
@@ -152,8 +170,10 @@ void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
 }
 
 // Spawn with redirection but DO NOT wait; returns child's pid (or -1 on error).
-pid_t spawn_external_with_redir(const char *path_to_exec, CmdParts *parts) {
-    if (!path_to_exec || !parts || !parts->argv || !parts->argv[0]) {
+pid_t spawn_external_with_redir(const char *path_to_exec, CmdParts *parts) 
+{
+    if (!path_to_exec || !parts || !parts->argv || !parts->argv[0]) 
+    {
         if (parts && parts->argv) 
             free(parts->argv);
         return -1;
