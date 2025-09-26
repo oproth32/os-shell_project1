@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Print the shell prompt in the format user@machine:currentDirectory>
 void prompt() {
     char *username = getenv("USER");
     char* machine = getenv("HOSTNAME") ? getenv("HOSTNAME") : getenv("MACHINE");

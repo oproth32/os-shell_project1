@@ -25,6 +25,7 @@ void change_env_var(char *tok, tokenlist *tokens) {
 			else
 				tok = "";
 		}
+		// if the token starts with a ~, replace it with the value of the HOME environment variable
 		else if (tok[0] == '~' && (tok[1] == '\\' || tok[1] == '\0'))
 		{
 			char *home = getenv("HOME");

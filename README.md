@@ -4,17 +4,17 @@
 
 ## Group Members
 - **Hubert Pilichowski**: hp22q@fsu.edu
-- **Jane Smith**: js19@fsu.edu
-- **Alex Brown**: ab19@fsu.edu
+- **Owen Proth**: oop23@fsu.edu
+- **Zidan Waite**: ab19@fsu.edu
 ## Division of Labor
 
 ### Part 1: Prompt
-- **Responsibilities**: [Description]
+- **Responsibilities**: Print the shell prompt in the format user@machine:currentDirectory
 - **Assigned to**: Hubert Pilichowski
 
 ### Part 2: Environment Variables
-- **Responsibilities**: [Description]
-- **Assigned to**: Hubert Pilichowski
+- **Responsibilities**: Replace environment variables (e.g., $VAR) and ~ in the given token string
+- **Assigned to**: 
 
 ### Part 3: Tilde Expansion
 - **Responsibilities**: [Description]

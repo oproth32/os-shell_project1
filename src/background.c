@@ -1,6 +1,6 @@
 #include "prompt.h"
 #include "lexer.h"
-#include "pipeline.h"   // split_by_pipe, exec_pipeline_filebacked(_bg)
+#include "pipeline.h" // split_by_pipe, exec_pipeline_filebacked(_bg)
 #include "background.h" // jobs_check_finished, jobs_add, trim_trailing_amp
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-/* -------- background job helpers -------- */
+// background job helpers
 void jobs_check_finished(Job *jobs, int next_job_id) {
     for (int i = 0; i < MAX_JOBS; i++) if (jobs[i].used) {
         int status;
@@ -21,6 +21,7 @@ void jobs_check_finished(Job *jobs, int next_job_id) {
     }
 }
 
+// Add a new background job; returns 0 on success, -1 on error (too many jobs).
 int jobs_add(pid_t pid, const char *cmdline, Job *jobs, int next_job_id) {
     for (int i = 0; i < MAX_JOBS; i++) if (!jobs[i].used) {
         jobs[i].used = 1;
@@ -34,7 +35,7 @@ int jobs_add(pid_t pid, const char *cmdline, Job *jobs, int next_job_id) {
     return -1;
 }
 
-/* Trim spaces and one trailing '&' for display purposes. */
+// Trim spaces and one trailing '&' for display purposes.
 void trim_trailing_amp(char *s) {
     if (!s) 
         return;

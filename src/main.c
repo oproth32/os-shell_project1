@@ -23,6 +23,8 @@ int main()
 		char *input = get_input();
 		// printf("whole input: %s\n", input);
 
+		// check how many background jobs have finished
+		// static array of jobs
 		static Job jobs[MAX_JOBS];
 		static int next_job_id = 1;
 		jobs_check_finished(jobs, next_job_id);
@@ -46,10 +48,11 @@ int main()
 			run_in_background = 1;
 		}
 
+		// split tokens by pipe character
 		tokenlist **pipelines = split_by_pipe(tokens);
 
 		/* this is the output of each token for each pipeline
-		
+
 		for (int i = 0; pipelines[i]; i++) {
 			printf("Pipeline %d:\n", i);
 			for (int j = 0; j < pipelines[i]->size; j++) {
@@ -58,6 +61,8 @@ int main()
 		}
 		*/
 
+		 // if there are no pipelines, call path search function
+		 // this also handles syntax errors like | cmd or cmd1 || cmd2
 		if (!pipelines) {
 			// split_by_pipe already printed a syntax error if any
 			pathSearch(tokens); // call path search function
@@ -66,6 +71,14 @@ int main()
 			continue;
 		}
 
+		// execute the pipeline
+		 // if run_in_background is true, run in background
+		 // otherwise, run in foreground
+		 // remember to add the job to the jobs list if running in background
+		 // and print the job id and pid of the last command in the pipeline
+
+		 // if there is only one command in the pipeline, just call path search function
+		 // with that command's tokens
 		if (run_in_background) {
 			char display[1024];
             snprintf(display, sizeof(display), "%s", input);

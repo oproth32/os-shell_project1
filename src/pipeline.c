@@ -106,7 +106,7 @@ static int mktemp_path(char *buf, size_t n) {
     return 0;
 }
 
-/* Build CmdParts from a segment and optionally force stdin/stdout via files. */
+// Build CmdParts from a segment and optionally force stdin/stdout via files. 
 static int make_parts(const tokenlist *segment, const char *forced_in, const char *forced_out, CmdParts *out) {
     if (!parse_redirection_from_tokens(segment, out)) {
         return 0;
@@ -119,8 +119,8 @@ static int make_parts(const tokenlist *segment, const char *forced_in, const cha
     if ((forced_in && out->in_path) ||   /* two inputs: conflict */
         (forced_out && out->out_path)) {  /* two outputs: conflict */
         fprintf(stderr, "error: cannot redirect %s when pipeline %s already assigned\n",
-                (forced_in && out->in_path) ? "stdin" : "stdout",
-                (forced_in && out->in_path) ? "input is" : "output is");
+            (forced_in && out->in_path) ? "stdin" : "stdout",
+            (forced_in && out->in_path) ? "input is" : "output is");
         free(out->argv);
         out->argv = NULL;
         return 0;
@@ -147,7 +147,7 @@ static int run_stage(const tokenlist *segment, const char *forced_in, const char
     }
 
     exec_external_with_redir(full, &parts);
-    /* exec_external_with_redir frees parts.argv in the parent */
+    // exec_external_with_redir frees parts.argv in the parent
     return 0;
 }
 
@@ -223,21 +223,26 @@ int exec_pipeline_filebacked(tokenlist **segments) {
     return rc;
 }
 
+// Spawn one stage in background, return its pid (or -1 on error).
 static pid_t spawn_stage_bg(const tokenlist *segment, const char *forced_in, const char *forced_out) {
     CmdParts parts;
     if (!make_parts(segment, forced_in, forced_out, &parts)) return -1;
     char full[4096];
+    // Resolve the command path
     if (!resolve_command(parts.argv[0], full, sizeof(full))) {
         fprintf(stderr, "%s: command not found\n", parts.argv[0]);
         free(parts.argv);
         return -1;
     }
+    // Spawn it (no wait)
     pid_t pid = spawn_external_with_redir(full, &parts);
     if (parts.argv) 
         free(parts.argv);
     return pid;
 }
 
+// Execute a pipeline in background using temporary files between stages.
+// Returns the pid of the last stage (or -1 on error).
 pid_t exec_pipeline_filebacked_bg(tokenlist **segments) {
     if (!segments || !segments[0]) 
         return -1;
@@ -245,9 +250,11 @@ pid_t exec_pipeline_filebacked_bg(tokenlist **segments) {
     while (segments[n]) 
         n++;
 
+    // Single stage: just spawn it
     if (n == 1) 
         return spawn_stage_bg(segments[0], NULL, NULL);
 
+    // Multiple stages: create n-1 temp files
     char **temps = calloc((size_t)(n - 1), sizeof(char *));
     if (!temps) { 
         perror("calloc"); 
@@ -283,6 +290,7 @@ pid_t exec_pipeline_filebacked_bg(tokenlist **segments) {
         return pid;
     }
 
+// Background last stage (stdin <- temps[n-2])
 fail:
     for (int i = 0; i < n - 1; i++) {
         if (temps[i]) { 
