@@ -6,10 +6,17 @@
 
 // Parsed command after removing redirection operators 
 typedef struct {
+<<<<<<< HEAD
     char **argv; // NULL-terminated argv (no <, >, filenames) 
     size_t argc; // number of args, not counting the NULL 
     char *in_path; // NULL if no "<" 
     char *out_path; // NULL if no ">" 
+=======
+    char   **argv;     /* NULL-terminated list of argv (no <, >, filenames) */
+    size_t   argc;     /* number of args, not counting the NULL */
+    char    *in_path;  /* NULL if no "<" */
+    char    *out_path; /* NULL if no ">" */
+>>>>>>> ae990714410e221d9fdf703222f191fa63ded5b9
 } CmdParts;
 
 // Parse < and > out of tokens; build argv. Returns 1 on success, 0 on syntax error. 

@@ -36,15 +36,19 @@ int jobs_add(pid_t pid, const char *cmdline, Job *jobs, int next_job_id) {
 }
 
 // Trim spaces and one trailing '&' for display purposes.
-void trim_trailing_amp(char *s) {
-    if (!s) 
-        return;
+/* Helper: trim trailing whitespace and a final '&' (with optional spaces before it)
+   from a display string used in the jobs table. Safe in-place. */
+static void trim_trailing_amp(char *s) {
+    if (!s) return;
     size_t len = strlen(s);
-    while (len > 0 && isspace((unsigned char)s[len - 1]))
+    // trim trailing whitespace
+    while (len > 0 && (s[len-1] == ' ' || s[len-1] == '\t' || s[len-1] == '\n'))
         s[--len] = '\0';
-    if (len > 0 && s[len - 1] == '&') {
+    // if now ends with '&', remove it
+    if (len > 0 && s[len-1] == '&') {
         s[--len] = '\0';
-        while (len > 0 && isspace((unsigned char)s[len - 1]))
+        // trim any whitespace that was before the '&'
+        while (len > 0 && (s[len-1] == ' ' || s[len-1] == '\t'))
             s[--len] = '\0';
     }
 }

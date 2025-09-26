@@ -9,109 +9,119 @@
 #include <stdlib.h>
 #include <string.h>
 
-int main()
+int main(void) 
 {
-	while (1) {
-		// print the username, machine name and current directory like in a normal shell
-		// e.g. user@machine:/current/directory
-		prompt();
 
-		/* input contains the whole command
-		 * tokens contains substrings from input split by spaces
-		 */
+	static Job jobs[MAX_JOBS];
+	static int next_job_id = 1;
 
-		char *input = get_input();
-		// printf("whole input: %s\n", input);
 
-		// check how many background jobs have finished
-		// static array of jobs
-		static Job jobs[MAX_JOBS];
-		static int next_job_id = 1;
-		jobs_check_finished(jobs, next_job_id);
+	for (;;) 
+	{
+    	prompt();
+    	char *input = get_input();
+    	if (!input) 
+		{ 
+			putchar('\n'); 
+			break; 
+		}
 
-		tokenlist *tokens = get_tokens(input);
-		int run_in_background = 0;
+    	jobs_check_finished(jobs, next_job_id);
 
-		// checking for the & command to run in background
-		// the '&' can only be at the end of the command
-		if (tokens->size > 0 && strcmp(tokens->items[tokens->size - 1], "&") == 0)
+    	tokenlist *tokens = get_tokens(input);
+    	if (!tokens || tokens->size == 0) 
 		{
-			if (tokens->size == 0) {  // lone '&'
+    		free_tokens(tokens);
+        	free(input);
+        	continue;
+    	}
+
+    	/* Background flag handling (unchanged) */
+    	int run_in_background = 0;
+    	if (tokens->size > 0 && strcmp(tokens->items[tokens->size - 1], "&") == 0) 
+		{
+        	free(tokens->items[tokens->size - 1]);
+        	tokens->items[tokens->size - 1] = NULL;
+        	tokens->size--;
+        	run_in_background = 1;
+        	if (tokens->size == 0) 
+			{ 
+				free_tokens(tokens); 
+				free(input); 
+				continue; 
+			}
+    	}
+
+		/* ---- BUILTIN DISPATCH (BEFORE PIPES) ---- 
+		if (is_builtin(tokens)) {
+			if (run_in_background) {
+				fprintf(stderr, "%s: cannot run built-in in background\n", tokens->items[0]);
 				free_tokens(tokens);
 				free(input);
 				continue;
 			}
-			// remove the '&' from the tokens list
-			free(tokens->items[tokens->size - 1]);
-			tokens->items[tokens->size - 1] = NULL;
-			tokens->size--;
-			run_in_background = 1;
-		}
-
-		// split tokens by pipe character
-		tokenlist **pipelines = split_by_pipe(tokens);
-
-		/* this is the output of each token for each pipeline
-
-		for (int i = 0; pipelines[i]; i++) {
-			printf("Pipeline %d:\n", i);
-			for (int j = 0; j < pipelines[i]->size; j++) {
-				printf("token %d: (%s)\n", j, pipelines[i]->items[j]);
+			// Execute builtin
+			if (run_builtin(tokens, jobs, &next_job_id, &hist) == 0) {
+				// record in history as a "valid command"
+				history_add(&hist, input);
 			}
-		}
-		*/
-
-		 // if there are no pipelines, call path search function
-		 // this also handles syntax errors like | cmd or cmd1 || cmd2
-		if (!pipelines) {
-			// split_by_pipe already printed a syntax error if any
-			pathSearch(tokens); // call path search function
-			free(input);
 			free_tokens(tokens);
+			free(input);
 			continue;
 		}
-
-		// execute the pipeline
-		 // if run_in_background is true, run in background
-		 // otherwise, run in foreground
-		 // remember to add the job to the jobs list if running in background
-		 // and print the job id and pid of the last command in the pipeline
-
-		 // if there is only one command in the pipeline, just call path search function
-		 // with that command's tokens
-		if (run_in_background) {
-			char display[1024];
-            snprintf(display, sizeof(display), "%s", input);
-            trim_trailing_amp(display);
-
-            pid_t pid = exec_pipeline_filebacked_bg(pipelines);
-            if (pid > 0) {
-                jobs_add(pid, display, jobs, next_job_id);
-            } 
-			else {
-                fprintf(stderr, "failed to start in background\n");
-            }
-        } 
-		else {
-            if (exec_pipeline_filebacked(pipelines) != 0) {
-                fprintf(stderr, "pipeline failed\n");
-            }
-		}
-
-		// Free the split array (remember: it only owns the items arrays + tokenlist structs)
-		free_split_tokenlists(pipelines);
-
-		/*
-		for (int i = 0; i < tokens->size; i++) {
-			printf("token %d: (%s)\n", i, tokens->items[i]);
-		}
 		*/
 
-		free(input);
-		free_tokens(tokens);
-	}
+		int pipelinecheck = 0;
+		for (int i = 0; i < (int)tokens->size; ++i) 
+		{
+			if (tokens->items[i] && strcmp(tokens->items[i], "|" ) == 0) 
+			{
+				pipelinecheck = 1;
+				break;
+			}
 
+		}
+
+		
+		if (!pipelinecheck) 
+		{
+			pathSearch(tokens);
+			free_tokens(tokens);
+			free(input);
+			continue;
+		}
+		/* ---- PIPELINE HANDLING ---- */
+		tokenlist **pipelines = split_by_pipe(tokens);
+		if (run_in_background) 
+		{
+			char display[1024];
+			snprintf(display, sizeof(display), "%s", input);
+			trim_trailing_amp(display);
+
+			pid_t last_pid = exec_pipeline_bg(pipelines);
+			if (last_pid > 0) 
+			{
+				jobs_add(last_pid, display, jobs, &next_job_id); // NOTE: &next_job_id
+				//history_add(&hist, display);                      // record
+			} else 
+			{
+				fprintf(stderr, "failed to start in background\n");
+			}
+		} else 
+		{
+			if (exec_pipeline(pipelines) != 0) 
+			{
+				fprintf(stderr, "pipeline failed\n");
+			} else 
+			{
+				//history_add(&hist, input); // record successful run
+			}
+		}
+
+		free_split_tokenlists(pipelines);
+		free_tokens(tokens);
+		free(input);
+	
+	}
 	return 0;
 }
-
-
