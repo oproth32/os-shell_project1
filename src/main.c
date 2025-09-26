@@ -48,7 +48,8 @@ int main()
 
 		tokenlist **pipelines = split_by_pipe(tokens);
 
-		/*
+		/* this is the output of each token for each pipeline
+		
 		for (int i = 0; pipelines[i]; i++) {
 			printf("Pipeline %d:\n", i);
 			for (int j = 0; j < pipelines[i]->size; j++) {

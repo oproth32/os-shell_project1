@@ -30,11 +30,13 @@ int parse_redirection_from_tokens(const tokenlist *tokens, CmdParts *parts) {
     parts->argv = NULL;
     parts->argc = 0;
 
-    if (!tokens || tokens->size == 0) return 0;
+    if (!tokens || tokens->size == 0) 
+        return 0;
 
     /* Worst case: every token is part of argv (+ NULL) */
     parts->argv = alloc_argv((size_t)tokens->size + 1);
-    if (!parts->argv) return 0;
+    if (!parts->argv) 
+        return 0;
 
     size_t out_i = 0;
     for (int i = 0; i < tokens->size; ++i) {
@@ -145,7 +147,8 @@ void exec_external_with_redir(const char *path_to_exec, CmdParts *parts) {
 // Spawn with redirection but DO NOT wait; returns child's pid (or -1 on error).
 pid_t spawn_external_with_redir(const char *path_to_exec, CmdParts *parts) {
     if (!path_to_exec || !parts || !parts->argv || !parts->argv[0]) {
-        if (parts && parts->argv) free(parts->argv);
+        if (parts && parts->argv) 
+            free(parts->argv);
         return -1;
     }
 
@@ -157,8 +160,10 @@ pid_t spawn_external_with_redir(const char *path_to_exec, CmdParts *parts) {
     }
     if (pid == 0) {
         /* CHILD: set up redirections first */
-        if (parts->in_path  && setup_input_redir(parts->in_path)  == -1) _exit(1);
-        if (parts->out_path && setup_output_redir(parts->out_path) == -1) _exit(1);
+        if (parts->in_path  && setup_input_redir(parts->in_path)  == -1)
+            _exit(1);
+        if (parts->out_path && setup_output_redir(parts->out_path) == -1)
+            _exit(1);
 
         execv(path_to_exec, parts->argv);
         perror(parts->argv[0]);

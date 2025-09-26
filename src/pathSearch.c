@@ -16,36 +16,67 @@ static int has_slash(const char *s) {
     return s && strchr(s, '/') != NULL;
 }
 
-/* Search $PATH for cmd; write full path to resolved on success, return 1/0. */
-static int resolve_via_path(const char *cmd, char resolved[PATH_MAX]) {
-    const char *path = getenv("PATH");
-    if (!cmd || !*cmd) return 0;
-    if (!path) path = "";
+/* Resolve an executable's full path.
+   Returns 1 and writes into out_path on success, 0 on failure. */
+int resolve_command(const char *cmd, char *out_path, size_t out_sz) {
+    if (!cmd || !*cmd || !out_path || out_sz == 0)
+        return 0;
 
-    size_t len = strlen(path);
-    char *copy = malloc(len+1);
-    if (copy == NULL)
-	perror("malloc failed");
-
-    strcpy(copy, path);
-    if (!copy) return 0;
-
-    int ok = 0;
-    for (char *seg = strtok(copy, ":"); seg; seg = strtok(NULL, ":")) {
-        const char *dir = (*seg == '\0') ? "." : seg; /* empty segment == current dir */
-        if (snprintf(resolved, PATH_MAX, "%s/%s", dir, cmd) >= (int)PATH_MAX) {
-            continue; /* path too long, skip */
-        }
-        if (access(resolved, X_OK) == 0) {
+    /* If cmd contains '/', treat it as a direct path (like shells do). */
+    if (strchr(cmd, '/')) {
+        if (access(cmd, X_OK) == 0) {
             struct stat st;
-            if (stat(resolved, &st) == 0 && S_ISREG(st.st_mode)) {
-                ok = 1;
-                break;
+            if (stat(cmd, &st) == 0 && S_ISREG(st.st_mode)) {
+                if (snprintf(out_path, out_sz, "%s", cmd) < (int)out_sz)
+                    return 1;
             }
         }
+        return 0;
     }
-    free(copy);
-    return ok;
+
+    /* Search PATH. */
+    const char *path = getenv("PATH");
+    if (!path || !*path)
+        path = "/bin:/usr/bin";
+
+    const char *p = path;
+    char candidate[4096];
+
+    while (*p) {
+        /* Find next ':' or end. */
+        const char *colon = strchr(p, ':');
+        size_t dir_len = colon ? (size_t)(colon - p) : strlen(p);
+
+        if (dir_len == 0) {
+            /* Empty entry => current directory "." */
+            if (snprintf(candidate, sizeof(candidate), "./%s", cmd) >= 0 &&
+                access(candidate, X_OK) == 0) {
+                struct stat st;
+                if (stat(candidate, &st) == 0 && S_ISREG(st.st_mode)) {
+                    if (snprintf(out_path, out_sz, "%s", candidate) < (int)out_sz)
+                        return 1;
+                }
+            }
+        } else {
+            /* Build "<dir>/<cmd>" safely. */
+            if (dir_len >= sizeof(candidate))
+                dir_len = sizeof(candidate) - 1;
+            if (snprintf(candidate, sizeof(candidate), "%.*s/%s", (int)dir_len, p, cmd) >= 0 &&
+                access(candidate, X_OK) == 0) {
+                struct stat st;
+                if (stat(candidate, &st) == 0 && S_ISREG(st.st_mode)) {
+                    if (snprintf(out_path, out_sz, "%s", candidate) < (int)out_sz)
+                        return 1;
+                }
+            }
+        }
+
+        if (!colon)
+            break;
+        p = colon + 1;
+    }
+
+    return 0;
 }
 
 /* -------- main entry -------- */
@@ -74,7 +105,7 @@ void pathSearch(tokenlist *tokens) {
 
     /* 3) PATH search */
     char resolved[PATH_MAX];
-    if (resolve_via_path(command, resolved)) {
+    if (resolve_command(command, resolved, sizeof(resolved))) {
         exec_external_with_redir(resolved, &parts);
     } else {
         fprintf(stderr, "%s: command not found\n", command);

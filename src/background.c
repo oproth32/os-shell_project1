@@ -36,11 +36,14 @@ int jobs_add(pid_t pid, const char *cmdline, Job *jobs, int next_job_id) {
 
 /* Trim spaces and one trailing '&' for display purposes. */
 void trim_trailing_amp(char *s) {
-    if (!s) return;
+    if (!s) 
+        return;
     size_t len = strlen(s);
-    while (len > 0 && isspace((unsigned char)s[len - 1])) s[--len] = '\0';
+    while (len > 0 && isspace((unsigned char)s[len - 1]))
+        s[--len] = '\0';
     if (len > 0 && s[len - 1] == '&') {
         s[--len] = '\0';
-        while (len > 0 && isspace((unsigned char)s[len - 1])) s[--len] = '\0';
+        while (len > 0 && isspace((unsigned char)s[len - 1]))
+            s[--len] = '\0';
     }
 }
