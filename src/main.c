@@ -5,6 +5,7 @@
 #include "pipeline.h"
 #include "background.h"
 #include "redirection.h"
+#include "internal.h"   
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +20,6 @@ int main()
 		/* input contains the whole command
 		 * tokens contains substrings from input split by spaces
 		 */
-
 		char *input = get_input();
 		// printf("whole input: %s\n", input);
 
@@ -30,6 +30,24 @@ int main()
 		jobs_check_finished(jobs, next_job_id);
 
 		tokenlist *tokens = get_tokens(input);
+
+		
+		if (tokens->size == 0) {
+			free(input);
+			free_tokens(tokens);
+			continue;
+		}
+
+		
+		add_history(input);
+
+		
+		if (run_internal(tokens, jobs, next_job_id)) {
+			free(input);
+			free_tokens(tokens);
+			continue;
+		}
+
 		int run_in_background = 0;
 
 		// checking for the & command to run in background
