@@ -2,6 +2,13 @@
 #define PIPELINE_H
 
 #include "lexer.h"
+#include "redirection.h"
+#include <sys/types.h> // pid_t
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
+
 
 typedef struct {
     CmdParts parts;             // argv/in/out from redirection parser

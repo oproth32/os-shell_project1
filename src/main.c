@@ -16,7 +16,7 @@ int main(void)
 	static int next_job_id = 1;
 
 
-	for (;;) 
+	while(1) 
 	{
     	prompt();
     	char *input = get_input();
