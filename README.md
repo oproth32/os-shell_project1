@@ -81,16 +81,16 @@ os-shell_project1/
 - **Dependencies**: List any libraries or frameworks necessary (rust only).
 
 ### Compilation
-For a C/C++ example:
+
 ```bash
 make
 ```
-This will build the executable in ...
+This will build the executable in bin/shell
 ### Execution
 ```bash
 make run
 ```
-This will run the program ...
+This will run the program shell
 
 ## Development Log
 Each member records their contributions here.
