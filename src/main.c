@@ -99,14 +99,16 @@ int main(void)
 			trim_trailing_amp(display);
 
 			pid_t last_pid = exec_pipeline_bg(pipelines);
+			/*
 			if (last_pid > 0) 
 			{
-				jobs_add(last_pid, display, jobs, &next_job_id); // NOTE: &next_job_id
+				jobs_add(last_pid, displayS, jobs, &next_job_id); // NOTE: &next_job_id
 				//history_add(&hist, display);                      // record
 			} else 
 			{
 				fprintf(stderr, "failed to start in background\n");
 			}
+				*/
 		} else 
 		{
 			if (exec_pipeline(pipelines) != 0) 
