@@ -11,119 +11,92 @@
 
 int main(void) 
 {
+    static Job jobs[MAX_JOBS];
+    static int next_job_id = 1;
+    jobs_init(jobs);   /* make sure table is empty */
 
-	static Job jobs[MAX_JOBS];
-	static int next_job_id = 1;
+    while (1) {
+        prompt();
+        char *input = get_input();
+        if (!input) { putchar('\n'); break; }
 
+        jobs_check_finished(jobs, next_job_id);
 
-	while(1) 
-	{
-    	prompt();
-    	char *input = get_input();
-    	if (!input) 
-		{ 
-			putchar('\n'); 
-			break; 
-		}
+        tokenlist *tokens = get_tokens(input);
+        if (!tokens || tokens->size == 0) {
+            if (tokens) free_tokens(tokens);
+            free(input);
+            continue;
+        }
 
-    	jobs_check_finished(jobs, next_job_id);
+        int run_in_background = 0;
+        if (tokens->size > 0 && strcmp(tokens->items[tokens->size - 1], "&") == 0) {
+            free(tokens->items[tokens->size - 1]);
+            tokens->items[tokens->size - 1] = NULL;
+            tokens->size--;
+            run_in_background = 1;
+            if (tokens->size == 0) { free_tokens(tokens); free(input); continue; }
+        }
 
-    	tokenlist *tokens = get_tokens(input);
-    	if (!tokens || tokens->size == 0) 
-		{
-    		free_tokens(tokens);
-        	free(input);
-        	continue;
-    	}
+        int pipelinecheck = 0;
+        for (int i = 0; i < (int)tokens->size; ++i) {
+            if (tokens->items[i] && strcmp(tokens->items[i], "|") == 0) { pipelinecheck = 1; break; }
+        }
 
-    	/* Background flag handling (unchanged) */
-    	int run_in_background = 0;
-    	if (tokens->size > 0 && strcmp(tokens->items[tokens->size - 1], "&") == 0) 
-		{
-        	free(tokens->items[tokens->size - 1]);
-        	tokens->items[tokens->size - 1] = NULL;
-        	tokens->size--;
-        	run_in_background = 1;
-        	if (tokens->size == 0) 
-			{ 
-				free_tokens(tokens); 
-				free(input); 
-				continue; 
-			}
-    	}
-
-		/* ---- BUILTIN DISPATCH (BEFORE PIPES) ---- 
-		if (is_builtin(tokens)) {
-			if (run_in_background) {
-				fprintf(stderr, "%s: cannot run built-in in background\n", tokens->items[0]);
-				free_tokens(tokens);
-				free(input);
-				continue;
-			}
-			// Execute builtin
-			if (run_builtin(tokens, jobs, &next_job_id, &hist) == 0) {
-				// record in history as a "valid command"
-				history_add(&hist, input);
-			}
-			free_tokens(tokens);
-			free(input);
-			continue;
-		}
-		*/
-
-		int pipelinecheck = 0;
-		for (int i = 0; i < (int)tokens->size; ++i) 
-		{
-			if (tokens->items[i] && strcmp(tokens->items[i], "|" ) == 0) 
+        if (!pipelinecheck) {
+            if (run_in_background) 
 			{
-				pipelinecheck = 1;
-				break;
-			}
+                char display[1024];
+                snprintf(display, sizeof(display), "%s", input);
+                trim_trailing_amp(display);
 
-		}
+                pid_t pid = -1;
+                if (pathSearch(tokens, 1, &pid) == 0 && pid > 0) 
+				{
+                    jobs_add(pid, display, jobs, &next_job_id);
+                } else {
+                    fprintf(stderr, "failed to start in background\n");
+                }
+            } else 
+			{
+                if(pathSearch(tokens, /*fg_bg=*/0, /*out_pid=*/NULL) < 0)
+					fprintf(stderr, "command failed\n");
+            }
+            free_tokens(tokens);
+            free(input);
+            continue;
+        }
 
-		
-		if (!pipelinecheck) 
-		{
-			pathSearch(tokens, run_in_background);
-			free_tokens(tokens);
-			free(input);
-			continue;
-		}
-		/* ---- PIPELINE HANDLING ---- */
-		tokenlist **pipelines = split_by_pipe(tokens);
-		if (run_in_background) 
-		{
-			char display[1024];
-			snprintf(display, sizeof(display), "%s", input);
-			trim_trailing_amp(display);
+        /* ---- PIPELINE HANDLING ---- */
+        tokenlist **pipelines = split_by_pipe(tokens);
+        if (!pipelines) {
+            // syntax error fallback
+            pathSearch(tokens, /*fg_bg=*/0, /*out_pid=*/NULL);
+            free_tokens(tokens);
+            free(input);
+            continue;
+        }
 
-			pid_t last_pid = exec_pipeline_bg(pipelines);
-			/*
-			if (last_pid > 0) 
-			{
-				jobs_add(last_pid, displayS, jobs, &next_job_id); // NOTE: &next_job_id
-				//history_add(&hist, display);                      // record
-			} else 
-			{
-				fprintf(stderr, "failed to start in background\n");
-			}
-				*/
-		} else 
-		{
-			if (exec_pipeline(pipelines) != 0) 
-			{
-				fprintf(stderr, "pipeline failed\n");
-			} else 
-			{
-				//history_add(&hist, input); // record successful run
-			}
-		}
+        if (run_in_background) {
+            char display[1024];
+            snprintf(display, sizeof(display), "%s", input);
+            trim_trailing_amp(display);
 
-		free_split_tokenlists(pipelines);
-		free_tokens(tokens);
-		free(input);
-	
-	}
-	return 0;
+            pid_t last_pid = exec_pipeline_bg(pipelines);  // last stage pid
+            if (last_pid > 0) {
+                jobs_add(last_pid, display, jobs, &next_job_id);
+            } else {
+                fprintf(stderr, "failed to start in background\n");
+            }
+        } else {
+            if (exec_pipeline(pipelines) != 0) {
+                fprintf(stderr, "pipeline failed\n");
+            }
+        }
+
+        free_split_tokenlists(pipelines);
+        free_tokens(tokens);
+        free(input);
+    }
+    return 0;
 }
