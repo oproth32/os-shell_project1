@@ -85,7 +85,7 @@ int main(void)
 		
 		if (!pipelinecheck) 
 		{
-			pathSearch(tokens);
+			pathSearch(tokens, run_in_background);
 			free_tokens(tokens);
 			free(input);
 			continue;

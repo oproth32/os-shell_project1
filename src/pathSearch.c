@@ -96,41 +96,62 @@ int resolve_command(const char *cmd, char *out_path, size_t out_sz)
 
 // -------- main entry -------- 
 
-void pathSearch(tokenlist *tokens) 
+void pathSearch(tokenlist *tokens, int fg_bg, pid_t *out_pid) 
 {
-    if (!tokens || tokens->size == 0) return;
+    if (out_pid) *out_pid = -1;
+    if (!tokens || tokens->size == 0) return -1;
 
-    // 1) Parse out < and >, build argv[] 
+    // 1) Parse < and >
     CmdParts parts;
-    if (!parse_redirection_from_tokens(tokens, &parts)) 
-    {
-        return; // syntax error already printed 
+    if (!parse_redirection_from_tokens(tokens, &parts)) {
+        return -1; // syntax error already printed
+    }
+    const char *command = parts.argv ? parts.argv[0] : NULL;
+    if (!command) {
+        if (parts.argv) free(parts.argv);
+        fprintf(stderr, "syntax error: empty command\n");
+        return -1;
     }
 
-    const char *command = parts.argv[0];
-
-    // 2) If command contains '/', treat as direct path (no PATH search) 
-    if (has_slash(command)) 
-    {
-        if (access(command, X_OK) == 0) 
-        {
-            exec_external_with_redir(command, &parts);
-        } else 
-        {
+    // 2) If command contains '/', treat as direct path
+    if (has_slash(command)) {
+        if (access(command, X_OK) == 0) {
+            if (fg_bg == 0) {
+                exec_external_with_redir(command, &parts);
+                // exec_external_with_redir frees parts.argv in parent
+                return 0;
+            } else {
+                pid_t pid = spawn_external_with_redir(command, &parts);
+                // spawn_external_with_redir does NOT free parts.argv
+                if (parts.argv) free(parts.argv);
+                if (pid <= 0) return -1;
+                if (out_pid) *out_pid = pid;
+                return 0;
+            }
+        } else {
             fprintf(stderr, "%s: command not found or not executable\n", command);
-            free(parts.argv);
+            if (parts.argv) free(parts.argv);
+            return -1;
         }
-        return;
     }
 
-    // 3) PATH search 
+    // 3) PATH search
     char resolved[PATH_MAX];
-    if (resolve_command(command, resolved, sizeof(resolved))) 
-    {
-        exec_external_with_redir(resolved, &parts);
-    } else 
-    {
+    if (resolve_command(command, resolved, sizeof(resolved))) {
+        if (fg_bg == 0) {
+            exec_external_with_redir(resolved, &parts);
+            // freed inside
+            return 0;
+        } else {
+            pid_t pid = spawn_external_with_redir(resolved, &parts);
+            if (parts.argv) free(parts.argv);
+            if (pid <= 0) return -1;
+            if (out_pid) *out_pid = pid;
+            return 0;
+        }
+    } else {
         fprintf(stderr, "%s: command not found\n", command);
-        free(parts.argv);
+        if (parts.argv) free(parts.argv);
+        return -1;
     }
 }
