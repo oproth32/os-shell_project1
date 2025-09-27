@@ -5,6 +5,7 @@
 #include "pipeline.h"
 #include "background.h"
 #include "redirection.h"
+#include "internal.h"   
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,16 @@ int main(void)
         tokenlist *tokens = get_tokens(input);
         if (!tokens || tokens->size == 0) {
             if (tokens) free_tokens(tokens);
+            free(input);
+            continue;
+        }
+
+        /* Part 9: add command to history */
+        add_history(input);
+
+        /* Part 9: run built-in command if it matches */
+        if (run_internal(tokens, jobs, next_job_id)) {
+            free_tokens(tokens);
             free(input);
             continue;
         }
