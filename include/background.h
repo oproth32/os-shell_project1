@@ -1,19 +1,19 @@
 #ifndef BACKGROUND_H
 #define BACKGROUND_H
 
-#include <sys/types.h>
+#include <sys/types.h>   // pid_t
 
 #define MAX_JOBS 10
 
 // Background job structure
 typedef struct {
-    int used;
-    int id; // job number (1,2,3,...) never reused
-    pid_t pid; // pid of single cmd OR last stage of pipeline
-    char cmdline[1024]; // for "[job] + done <cmdline>"
+    int   used;                 // slot in use?
+    int   id;                   // job number (1,2,3,...) never reused
+    pid_t pid;                  // pid of single cmd OR last stage of pipeline
+    char  cmdline[1024];        // for "[job] + done <cmdline>"
 } Job;
 
-// Initialize jobs array
+/* Initialize the jobs table to empty. */
 void jobs_init(Job jobs[]);
 
 /* Add a new background job; prints "[id] pid" on success.

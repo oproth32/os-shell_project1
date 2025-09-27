@@ -2,6 +2,8 @@
 #define PATHSEARCH_H
 
 #include "lexer.h"
+#include <sys/types.h> // pid_t
+
 
 // Entry point: resolves command (PATH or direct) and executes (with redirection, via redirection module).
 int pathSearch(tokenlist *tokens, int fg_bg, pid_t *out_pid);
