@@ -96,7 +96,7 @@ int resolve_command(const char *cmd, char *out_path, size_t out_sz)
 
 // -------- main entry -------- 
 
-void pathSearch(tokenlist *tokens, int fg_bg, pid_t *out_pid) 
+int pathSearch(tokenlist *tokens, int fg_bg, pid_t *out_pid) 
 {
     if (out_pid) *out_pid = -1;
     if (!tokens || tokens->size == 0) return -1;
@@ -112,6 +112,12 @@ void pathSearch(tokenlist *tokens, int fg_bg, pid_t *out_pid)
         fprintf(stderr, "syntax error: empty command\n");
         return -1;
     }
+
+    // ---- Shell-ception addition ----
+    if (strcmp(command, "./shell") == 0 || strcmp(command, "shell") == 0) {
+        fprintf(stderr, "Shell-ception: launching a nested shell...\n");
+    }
+    // --------------------------------
 
     // 2) If command contains '/', treat as direct path
     if (has_slash(command)) {
