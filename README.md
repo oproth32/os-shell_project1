@@ -46,7 +46,7 @@
 
 ### Extra Credit
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown
+- **Assigned to**: Owen Proth, Hubert Pilichowski, Zidan Waite
 
 ## File Listing
 ```
