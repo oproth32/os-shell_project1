@@ -42,7 +42,7 @@ int main(void)
              - jobs: list active bg jobs
            It should return 1 if it handled the command (whether success or error),
            0 if not a builtin. */
-        if (run_internal(tokens, jobs, &next_job_id)) {
+        if (run_internal(tokens, jobs, next_job_id)) {
             /* If you want built-ins to count toward history, add here: */
             add_history(input);
             free_tokens(tokens);
